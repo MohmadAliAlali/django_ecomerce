@@ -38,10 +38,10 @@ class LoginView(CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        # استخراج المستخدم الذي تم التحقق منه في الـ Serializer
+        # استخراج المستخدم من الـ Serializer بعد التحقق
         user = serializer.validated_data['user']
         
-        # إذا كنت تستخدم Token Authentication (اختياري)
+        # إنشاء أو جلب التوكن
         token, created = Token.objects.get_or_create(user=user)
         
         return Response({

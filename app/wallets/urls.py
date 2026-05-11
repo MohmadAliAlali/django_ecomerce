@@ -1,8 +1,7 @@
-# app/wallets/urls.py
 from django.urls import path
-from .views import WalletCreateView
+from .views import WalletDetailView, WalletAddFundsView
 
 urlpatterns = [
-    # تسجيل العرض مباشرة باستخدام path
-    path('create/', WalletCreateView.as_view(), name='wallet-create'),
+    path('my-wallet/', WalletDetailView.as_view(), name='wallet-detail'),
+    path('add-funds/', WalletAddFundsView.as_view(), name='wallet-add-funds'),
 ]

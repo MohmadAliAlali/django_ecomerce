@@ -1,37 +1,33 @@
-from rest_framework import status
-from rest_framework.generics import CreateAPIView, RetrieveAPIView, DestroyAPIView
-from rest_framework.response import Response
+from rest_framework.generics import ListAPIView, CreateAPIView, DestroyAPIView
 from rest_framework.permissions import IsAuthenticated
 from .serializers import CartSerializer
 from .models import Cart
+
 class CartCreateView(CreateAPIView):
-    """
-    العرض أصبح نظيفاً جداً
-    """
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated]
 
     def get_serializer_context(self):
-        """
-        خطوة مهمة جداً لتمرير الـ request إلى الـ Serializer
-        """
         context = super().get_serializer_context()
         context['request'] = self.request
         return context
 
-
-class CartDetailView(RetrieveAPIView):
+# استخدام ListAPIView بدلاً من RetrieveAPIView لعرض جميع منتجات السلة
+class CartDetailView(ListAPIView): 
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_object(self):
+    def get_queryset(self):
+        # إرجاع جميع السجلات المرتبطة بهذا المستخدم
+        return Cart.objects.filter(user=self.request.user)
 
-        return Cart.objects.get(user=self.request.user)
-
-
+# ملاحظة: CartDeleteView الحالي سيحذف كل سلة المستخدم دفعة واحدة.
+# إذا كنت تريد حذف منتج معين، ستحتاج لتعديلها لاستقبال id المنتج.
 class CartDeleteView(DestroyAPIView):
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated]
-
+    
+    # كن حذراً، هذا سيحاول حذف السلة بالكامل بناءً على المستخدم
+    # إذا كان هناك عدة منتجات، سيرمي خطأ MultipleObjectsReturned
     def get_object(self):
-        return Cart.objects.get(user=self.request.user)
+        return Cart.objects.filter(user=self.request.user).first() 

@@ -17,8 +17,9 @@ class Cart(models.Model):
             raise ValueError("Can't add product with zero or negative quantity.")
         super().save(*args, **kwargs)
     def clean(self):
-
-        if self.quantity > self.product.stock: 
+        # تصحيح الخطأ: self.product -> self.products_id
+        # التأكد من أن products_id موجود قبل التحقق من المخزون
+        if self.products_id and self.quantity > self.products_id.stock:
             raise ValidationError(
-                f"نأسف، الكمية المطلوبة غير متوفرة. المتوفر فقط: {self.product.stock}"
+                f"نأسف، الكمية المطلوبة غير متوفرة. المتوفر فقط: {self.products_id.stock}"
             )

@@ -17,22 +17,21 @@ class SignupSerializer(serializers.ModelSerializer):
         )
         return user
     
+from rest_framework import serializers
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
+from rest_framework.authtoken.models import Token
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField()
 
-    def validate(self, data):
-        username = data.get('username')
-        password = data.get('password')
-
-        if username and password:
-            user = authenticate(username=username, password=password)
-            if not user:
-                raise serializers.ValidationError("البيانات غير صحيحة.")
-        else:
-            raise serializers.ValidationError("يجب إدخال اسم المستخدم وكلمة المرور.")
-
-        # نمرر المستخدم بعد التحقق منه ليكون متاحاً في الـ View
-        data['user'] = user
-        return data
+    def validate(self, attrs):
+        user = authenticate(**attrs)
+        # إذا فشلت المصادقة (اسم مستخدم أو كلمة مرور خطأ)
+        if user is None:
+            raise serializers.ValidationError("اسم المستخدم أو كلمة المرور غير صحيحة")
+        
+        # حفظ المستخدم في validated_data لاستخدامه في الـ View
+        attrs['user'] = user
+        return attrs

@@ -1,15 +1,7 @@
 from django.urls import path
-from .views import *
-
-
-
-
-
-
-
+from .views import CreateOrderView, InvoiceListView
 
 urlpatterns = [
-    # إنشاء سلة (POST)
-    path('inv/', InvoicesViewSet.as_view(), name='inv-create'),
-    
+    path('create/', CreateOrderView.as_view(), name='create-order'),
+    path('list/', InvoiceListView.as_view(), name='invoice-list'),
 ]
