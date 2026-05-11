@@ -60,6 +60,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'helper.performance.PerformanceTrackingMiddleware',
 ]
 
 ROOT_URLCONF = 'e_commerce.urls'
@@ -119,3 +120,10 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
+
+# Performance report output and thresholds.
+PERF_REPORT_PATH = BASE_DIR / "performance-report.json"
+PERF_THRESHOLDS = {
+    "duration_s": {"warning": 0.5, "critical": 1.0},
+    "queries": {"warning": 50, "critical": 120},
+}

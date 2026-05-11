@@ -1,0 +1,36 @@
+{
+  "report_meta": {
+    "generated_at": "2026-05-11T15:54:48.392956+00:00",
+    "thresholds": {
+      "duration_s": {
+        "warning": 0.5,
+        "critical": 1.0
+      },
+      "queries": {
+        "warning": 50.0,
+        "critical": 120.0
+      }
+    }
+  },
+  "tests": [],
+  "concurrency": [
+    {
+      "name": "app.cart.tests_performance.CartConcurrencyTests.test_concurrent_update_cart_quantity",
+      "attempts": 15,
+      "successes": 9,
+      "error_count": 0,
+      "error_types": {},
+      "expected_exact": null,
+      "expected_max": 9,
+      "note": "stock=10 initial_qty=1 final_qty=10",
+      "status": "contention",
+      "reasons": [
+        "contention"
+      ],
+      "level": "warning"
+    }
+  ],
+  "metrics": [],
+  "errors": [],
+  "summary": "=== Performance Report ===\ntests=0 concurrency_cases=1 metrics=0 errors=0\n\nConcurrency outcomes:\n- app.cart.tests_performance.CartConcurrencyTests.test_concurrent_update_cart_quantity | attempts=15 successes=9 errors=0 | status=contention | contention\n  note=stock=10 initial_qty=1 final_qty=10\n\nWeak points:\n- app.cart.tests_performance.CartConcurrencyTests.test_concurrent_update_cart_quantity (concurrency-contention)\n"
+}

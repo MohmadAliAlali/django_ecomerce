@@ -1,0 +1,139 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<style>
+  .perf-summary { background: #f6f8fa; padding: 12px; border: 1px solid #d0d7de; }
+  .perf-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  .perf-table th, .perf-table td { border: 1px solid #d0d7de; padding: 6px 8px; text-align: left; }
+  .perf-level { font-weight: 600; text-transform: capitalize; }
+  .perf-level-good { color: #1a7f37; }
+  .perf-level-warning { color: #9a6700; }
+  .perf-level-critical { color: #d1242f; }
+</style>
+
+<h1>Performance Report</h1>
+<p><strong>Report path:</strong> {{ report_path }}</p>
+
+{% if load_error %}
+  <div class="messagelist">
+    <ul><li class="error">{{ load_error }}</li></ul>
+  </div>
+{% endif %}
+
+{% if report %}
+  <p><a class="button" href="?download=1">Download JSON</a></p>
+
+  <h2>Summary</h2>
+  <pre class="perf-summary">{{ summary }}</pre>
+
+  <h2>Tests</h2>
+  <table class="perf-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Duration (s)</th>
+        <th>Queries</th>
+        <th>Level</th>
+        <th>Duration Level</th>
+        <th>Query Level</th>
+        <th>Tags</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for test in report.tests %}
+        <tr>
+          <td>{{ test.name }}</td>
+          <td>{{ test.duration_s|floatformat:4 }}</td>
+          <td>{{ test.queries }}</td>
+          <td class="perf-level perf-level-{{ test.classification.level }}">
+            {{ test.classification.level }}
+          </td>
+          <td>{{ test.classification.duration_level }}</td>
+          <td>{{ test.classification.query_level }}</td>
+          <td>{{ test.classification.tags|join:", " }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7">No tests recorded.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Concurrency</h2>
+  <table class="perf-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Status</th>
+        <th>Level</th>
+        <th>Attempts</th>
+        <th>Successes</th>
+        <th>Errors</th>
+        <th>Error Types</th>
+        <th>Note</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in report.concurrency %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td>{{ item.status }}</td>
+          <td class="perf-level perf-level-{{ item.level }}">{{ item.level }}</td>
+          <td>{{ item.attempts }}</td>
+          <td>{{ item.successes }}</td>
+          <td>{{ item.error_count }}</td>
+          <td>{{ item.error_types }}</td>
+          <td>{{ item.note }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8">No concurrency records.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Metrics</h2>
+  <table class="perf-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Metric</th>
+        <th>Value</th>
+        <th>Unit</th>
+        <th>Extra</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in report.metrics %}
+        <tr>
+          <td>{{ item.name }}</td>
+          <td>{{ item.metric }}</td>
+          <td>{{ item.value }}</td>
+          <td>{{ item.unit }}</td>
+          <td>{{ item.extra }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">No custom metrics recorded.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if report.errors %}
+    <h2>Errors</h2>
+    <table class="perf-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Error</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in report.errors %}
+          <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.error }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endif %}
+{% endblock %}
