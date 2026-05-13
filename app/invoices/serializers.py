@@ -1,4 +1,8 @@
 from rest_framework import serializers
+from django.db import transaction
+from django.db.models import F
+
+from app.product.models import Product
 from .models import Invoice, InvoiceItem
 from app.cart.models import Cart
 from app.wallets.models import Wallet  # استيراد موديل المحفظة
@@ -80,21 +84,37 @@ class InvoiceSerializer(serializers.ModelSerializer):
             status='pending' 
         )
 
-        # 3. نقل المنتجات إلى InvoiceItem
-        for item in cart_items:
-            InvoiceItem.objects.create(
-                invoice=invoice,
-                product_name=item.products_id.name,
-                quantity=item.quantity,
-                price=item.products_id.price
-            )
-            
-            # (اختياري) تحديث المخزون
-            product = item.products_id
-            product.stock -= item.quantity
-            product.save()
+        with transaction.atomic():
+            for item in cart_items:
+                # --- جلب المنتج مع القفل (Select For Update) ---
+                # سيقوم هذا بإيقاف أي طلب آخر يحاول تعديل نفس المنتج
+                # حتى ينتهي هذا الطلب
+                product = Product.objects.select_for_update().get(pk=item.products_id.pk)
+                
+                # --- التحقق من الكمية بعد القفل ---
+                if product.stock >= item.quantity:
+                    # --- التعديل الآمن باستخدام F() ---
+                    # خصم الرصيد مباشرة في قاعدة البيانات
+                    product.stock = F('stock') - item.quantity
+                    product.save(update_fields=['stock'])
+                    
+                    # إنشاء سجل الفاتورة
+                    InvoiceItem.objects.create(
+                        invoice=invoice,
+                        product_name=item.products_id.name,
+                        quantity=item.quantity,
+                        price=item.products_id.price
+                    )
+                else:
+                    # إذا لم يكفِ الرصيد (أكله طلب آخر قبلنا)
+                    # سنقوم بإما رفع استثناء لترجيع الطلب بالكامل
+                    # أو إنشاء الفاتورة ولكن بدون هذا المنتج.
+                    # في هذا الكود سنرفع استثناء لوقف الفاتورة بالكامل.
+                    raise serializers.ValidationError(
+                        f"عذراً، نفد المخزون للمنتج {product.name} أثناء معالجة طلبك. الرصيد المتبقي: {product.stock}"
+                    )
 
-        # 4. تفريغ السلة
-        cart_items.delete()
+            # 5. تفريغ السلة (يتم خارج الحلقة لتفريغ كل السلة بنجاح)
+            cart_items.delete()
 
         return invoice

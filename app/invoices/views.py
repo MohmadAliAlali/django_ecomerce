@@ -3,36 +3,26 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .serializers import InvoiceSerializer
 from .models import Invoice
+from .tasks import process_purchase_order_task
 
 class CreateOrderView(generics.CreateAPIView):
-    """
-    ينشئ فاتورة جديدة، يتحقق من الرصيد، ويخصم المبلغ
-    """
     serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_serializer_context(self):
-        """
-        تمرير الـ request للـ Serializer لاستخدامه في جلب المستخدم والمحفظة
-        """
-        context = super().get_serializer_context()
-        context['request'] = self.request
-        return context
-
     def create(self, request, *args, **kwargs):
+        # 1. التحقق البسيط (يمكن وضع التحقق هنا لتوفير الوقت في حال السلة فارغة)
         serializer = self.get_serializer(data={})
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        
-        headers = self.get_success_headers(serializer.data)
-        return Response(
-            {
-                "message": "تم إنشاء الطلب وخصم المبلغ بنجاح",
-                "invoice": serializer.data
-            }, 
-            status=status.HTTP_201_CREATED, 
-            headers=headers
-        )
+
+        # 2. إرسال الأمر لـ Celery (إدخال الطابور)
+        # delay() يعني نفذها في الخلفية وارجع فوراً رد للعميل
+        task_result = process_purchase_order_task.delay(request.user.id)
+
+        return Response({
+            "message": "تم استلام طلبك. يرجى الانتظار بينما يتم معالجته...",
+            "task_id": task_result.id, # يمكن استخدامه لتتبع الحالة
+            "status": "processing_queue"
+        }, status=status.HTTP_202_ACCEPTED)
 
 class InvoiceListView(generics.ListAPIView):
     serializer_class = InvoiceSerializer

@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'app.invoices',
     'app.wallets',
     'drf_spectacular',
+    'drf_api_logger',
 
 ]
 
@@ -52,7 +53,9 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
+
 MIDDLEWARE = [
+    'drf_api_logger.middleware.api_logger_middleware.APILoggerMiddleware', # يفضل وضعه في البداية
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -60,7 +63,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'helper.performance.PerformanceTrackingMiddleware',
+    # 'helper.performance.PerformanceTrackingMiddleware',
 ]
 
 ROOT_URLCONF = 'e_commerce.urls'
@@ -121,9 +124,19 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# Performance report output and thresholds.
-PERF_REPORT_PATH = BASE_DIR / "performance-report.json"
-PERF_THRESHOLDS = {
-    "duration_s": {"warning": 0.5, "critical": 1.0},
-    "queries": {"warning": 50, "critical": 120},
-}
+
+DRF_API_LOGGER_DATABASE = True
+DRF_API_LOGGER_SKIP_URL_NAME = ['admin:', 'swagger', "docs",'redoc']
+DRF_API_LOGGER_QUEUE_MAX_SIZE = 50 
+DRF_API_LOGGER_INTERVAL = 10   
+
+
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+# CELERY_TIMEZONE = 'Asia/Syria' 
+CELERY_TIMEZONE = 'UTC'
+CELERY_TASK_TRACK_STARTED = True

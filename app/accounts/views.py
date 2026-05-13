@@ -1,6 +1,7 @@
 from rest_framework.generics import CreateAPIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.authtoken.models import Token
 from .serializers import SignupSerializer , LoginSerializer
 
@@ -9,6 +10,7 @@ class SignupCreateAPIView(CreateAPIView):
     دالة التسجيل الجديدة، تعمل بدون ViewModel وتولد توكن مباشرة
     """
     serializer_class = SignupSerializer
+    permission_classes = [AllowAny]  # <--- 2. السماح للجميع بالوصول لهذه الصفحة
 
     def create(self, request, *args, **kwargs):
         # 1. التحقق من البيانات باستخدام السيريالايزر
@@ -33,6 +35,7 @@ class SignupCreateAPIView(CreateAPIView):
 
 class LoginView(CreateAPIView):
     serializer_class = LoginSerializer
+    permission_classes = [AllowAny]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
