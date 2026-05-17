@@ -21,3 +21,8 @@ class ProductSerializer(serializers.ModelSerializer):
         if instance.stock <= 0:
             return {} 
         return super().to_representation(instance)
+    
+class ProductItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields  = ['id', 'name', 'description', 'price', 'stock']

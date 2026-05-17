@@ -1,31 +1,28 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .serializers import InvoiceSerializer
+from rest_framework.views import APIView
+from django.db import transaction, OperationalError
+from .serializers import InvoiceSerializer, InvoiceItemSerializer
 from .models import Invoice
-from .tasks import process_purchase_order_task
 
 class CreateOrderView(generics.CreateAPIView):
-    serializer_class = InvoiceSerializer
     permission_classes = [IsAuthenticated]
+    serializer_class = InvoiceSerializer
 
     def create(self, request, *args, **kwargs):
-        # 1. التحقق البسيط (يمكن وضع التحقق هنا لتوفير الوقت في حال السلة فارغة)
-        serializer = self.get_serializer(data={})
-        serializer.is_valid(raise_exception=True)
-
-        # 2. إرسال الأمر لـ Celery (إدخال الطابور)
-        # delay() يعني نفذها في الخلفية وارجع فوراً رد للعميل
-        task_result = process_purchase_order_task.delay(request.user.id)
-
-        return Response({
-            "message": "تم استلام طلبك. يرجى الانتظار بينما يتم معالجته...",
-            "task_id": task_result.id, # يمكن استخدامه لتتبع الحالة
-            "status": "processing_queue"
-        }, status=status.HTTP_202_ACCEPTED)
+        # إعادة المحاولة تلقائياً عند تعارض قاعدة البيانات (3 محاولات)
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                return super().create(request, *args, **kwargs)
+            except OperationalError as e:
+                if 'could not serialize' in str(e).lower() and attempt < max_retries - 1:
+                    continue
+                raise
 
 class InvoiceListView(generics.ListAPIView):
-    serializer_class = InvoiceSerializer
+    serializer_class = InvoiceItemSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):

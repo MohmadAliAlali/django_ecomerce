@@ -1,113 +1,138 @@
-import random
-from celery import shared_task
-from django.core.exceptions import ValidationError
-from app.cart.models import Cart
-from app.wallets.models import Wallet
-from app.product.models import Product
-from .models import Invoice, InvoiceItem
-from django.db.models import F, Sum
-from django.db import transaction
+# from django.contrib.auth.models import User
+# from django.db import transaction
+# from django_q.tasks import async_task
+# from .cache import InventoryCache
+# from .models import Invoice, InvoiceItem
+# from app.cart.models import Cart
+# from app.wallets.models import Wallet
+# from app.product.models import Product
 
-@shared_task(bind=True, max_retries=5) # الحد الأقصى للمحاولات (السيناريو الحالي + الانتظار)
-def process_purchase_order_task(self, user_id):
-    from django.contrib.auth.models import User
-    user = User.objects.get(id=user_id)
+# from django.contrib.auth.models import User
+# from django.db import transaction
+# from django.utils import timezone
+# from datetime import timedelta
+# from django_q.models import Schedule
+# from .cache import InventoryCache
+# from .models import Invoice, InvoiceItem
+# from app.cart.models import Cart
+# from app.wallets.models import Wallet
+
+# def process_or_wait(user_id, attempt=1):
+#     from django.utils import timezone
+#     from datetime import timedelta
+#     from django_q.models import Schedule
     
-    # جلب السلة
-    cart_items = Cart.objects.filter(user=user).order_by('products_id')
+#     user = User.objects.get(id=user_id)
     
-    if not cart_items.exists():
-        return {"status": "failed", "reason": "Cart Empty"}
+#     ok, msg, allocations = InventoryCache.reserve_cart(user)
+#     if ok:
+#         async_task(
+#             'app.invoices.tasks.process_order',
+#             user_id,
+#             hook='app.invoices.hooks.on_done'
+#         )
+#         return {"status": "processing", "items": len(allocations)}
+    
+#     if attempt >= 3:
+#         return {"status": "failed", "reason": msg}
+    
+#     Schedule.objects.create(
+#         func='app.invoices.tasks.process_or_wait',
+#         args=(user_id, attempt + 1),
+#         schedule_type=Schedule.ONCE,
+#         next_run=timezone.now() + timedelta(seconds=30),
+#     )
+#     return {"status": "waiting", "attempt": attempt, "retry_in": 30, "reason": msg}
 
-    total_amount = sum(item.total_price() for item in cart_items)
-
-    try:
-        with transaction.atomic():
-            # 1. خصم الرصيد (حجز المكان)
-            wallet = user.wallet
-            wallet.balance -= total_amount
-            wallet.save()
-
-            invoice = Invoice.objects.create(
-                user=user,
-                total_amount=total_amount,
-                status='completed'
-            )
-
-            # 2. محاولة حجز المخزون
-            for item in cart_items:
-                product = item.products_id
-                
-                updated_rows = Product.objects.filter(
-                    pk=product.pk,
-                    stock__gte=item.quantity
-                ).update(
-                    stock=F('stock') - item.quantity
-                )
-                
-                if updated_rows == 0:
-                    # المخزون نفد، نعيد المال ونلغي الفاتورة
-                    raise ValidationError(f"Product {product.name} out of stock.")
-                
-                InvoiceItem.objects.create(
-                    invoice=invoice,
-                    product_name=item.products_id.name,
-                    quantity=item.quantity,
-                    price=item.products_id.price
-                )
-
-            # 3. نجاح: تفريغ السلة
-            cart_items.delete()
-            
-        return {"status": "success", "invoice_id": invoice.id}
-
-    except ValidationError as e:
-        # --- منطق إعادة المحاولة (Retry) ---
-        print(f"⏳ المحاولة {self.request.retries}/5: المخزون نفد للمستخدم {user.username}")
+# def process_order(user_id):
+#     user = User.objects.get(id=user_id)
+#     items = Cart.objects.filter(user=user).select_related('products_id')
+    
+#     total = sum(i.total_price() for i in items)
+    
+#     with transaction.atomic():
+#         wallet = user.wallet
+#         if wallet.balance < total:
+#             raise Exception("رصيد غير كافٍ")
         
-        # إرجاع المال الذي تم خصمه (لأنه لم يتم الشراء)
-        wallet = user.wallet
-        wallet.balance += total_amount
-        wallet.save()
+#         wallet.balance -= total
+#         wallet.save()
         
-        # التحقق: هل وصلنا لحد المحاولات القصوى؟
-        # max_retries في الديكور هو 5، ونحن الآن في المحاولة رقم ...
-        # إذا كانت المحاولات المتبقية أكبر من 0، نعيد المحاولة
-        if self.request.retries < self.max_retries:
-            # انتظار عشوائي لتفادي السحب (Deadlock) بين المحاولات
-            retry_delay = random.randint(3, 7)
-            raise self.retry(exc=e, countdown=retry_delay)
+#         inv = Invoice.objects.create(user=user, total_amount=total, status='completed')
         
-        else:
-            # --- استراتيجية الانسحاب (Give Up Strategy) ---
-            # وصلنا للحد الأقصى (5 محاولات) ولا يزال المنتج غير متوفر.
-            # هذا يعني أن هناك "طابور انتظار" طويل جداً ونفدت الفرص.
+#         for item in items:
+#             pid = item.products_id.id
+#             qty = item.quantity
             
-            print(f"❌ فشل نهائي للمستخدم {user.username} بعد 5 محاولات. المخزون نفد نهائياً.")
+#             InventoryCache.commit(pid, qty)
             
-            # 1. تفريغ السلة (حذف المنتجات غير المتاحة)
-            cart_items.delete()
-            
-            # 2. إرجاع المال (للتأكيد)
-            # (تم بالأعلى، لكن للتأكد)
-            wallet.balance += total_amount
-            wallet.save()
-            
-            # 3. هنا يمكنك إرسال إشعار (Notification)
-            # مثلاً: Notification.objects.create(user=user, message="نعتذر عن عدم توفر المنتج.")
-            
-            return {
-                "status": "failed", 
-                "reason": "عذراً، نفدت الكمية تماماً ونعتذر عن عدم إتمام طلبك.",
-                "retry_limit_reached": True
-            }
+#             InvoiceItem.objects.create(
+#                 invoice=inv,
+#                 product_name=item.products_id.name,
+#                 quantity=qty,
+#                 price=item.products_id.price
+#             )
+        
+#         items.delete()
+    
+#     return {"status": "success", "invoice_id": inv.id}
 
-    except Exception as e:
-        # أي خطأ آخر غير معروف (مشكلة تقنية)
-        print(f"⚠️ خطأ تقني: {e}")
-        # إرجاع المال
-        wallet = user.wallet
-        wallet.balance += total_amount
-        wallet.save()
+
+# def process_order_sync(user_id):
+#     """تنفيذ فوري (Synchronous) — يُنفذ في الـ View مباشرة"""
+#     user = User.objects.get(id=user_id)
+#     items = Cart.objects.filter(user=user).select_related('products_id')
+#     total = sum(i.total_price() for i in items)
+    
+#     with transaction.atomic():
+#         wallet = user.wallet
+#         if wallet.balance < total:
+#             raise Exception("رصيد غير كافٍ")
         
-        return {"status": "failed", "reason": str(e)}
+#         wallet.balance -= total
+#         wallet.save()
+        
+#         inv = Invoice.objects.create(user=user, total_amount=total, status='completed')
+        
+#         for item in items:
+#             pid, qty = item.products_id.id, item.quantity
+#             InventoryCache.commit(pid, qty)
+#             InvoiceItem.objects.create(
+#                 invoice=inv,
+#                 product_name=item.products_id.name,
+#                 quantity=qty,
+#                 price=item.products_id.price
+#             )
+        
+#         items.delete()
+    
+#     return {"status": "success", "invoice_id": inv.id}
+
+# def attempt_process(user_id, attempt=1):
+#     """محاولة من الطابور — تُنفذها Django-Q2 Scheduler"""
+#     user = User.objects.get(id=user_id)
+#     ok, code, msg, allocations = InventoryCache.reserve_cart(user)
+    
+#     if ok:
+#         try:
+#             return process_order_sync(user_id)
+#         except Exception:
+#             for a in allocations:
+#                 InventoryCache.release(a['pid'], a['qty'])
+#             if attempt < 3:
+#                 _schedule(user_id, attempt + 1)
+#             return {"status": "failed", "reason": "فشل التنفيذ"}
+    
+#     if code == "insufficient" and attempt < 3:
+#         _schedule(user_id, attempt + 1)
+#         return {"status": "waiting", "attempt": attempt}
+    
+#     return {"status": "failed", "reason": msg}
+
+# def _schedule(user_id, attempt):
+#     Schedule.objects.create(
+#         func='app.invoices.tasks.attempt_process',
+#         args=(user_id, attempt),
+#         schedule_type=Schedule.ONCE,
+#         next_run=timezone.now() + timedelta(seconds=30),
+#     )

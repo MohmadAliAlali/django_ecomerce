@@ -1,0 +1,61 @@
+services:
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_DB: ecommerce_db
+      POSTGRES_USER: ecommerce_user
+      POSTGRES_PASSWORD: ecommerce_password
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecommerce_user -d ecommerce_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce_network
+
+  web:
+    build: .
+    command: ["run"]
+    volumes:
+      - .:/usr/src/app/
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DEBUG: 1
+      DATABASE_URL: postgres://ecommerce_user:ecommerce_password@db:5432/ecommerce_db
+      POSTGRES_DB: ecommerce_db
+      POSTGRES_USER: ecommerce_user
+      POSTGRES_PASSWORD: ecommerce_password
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+    networks:
+      - ecommerce_network
+    restart: unless-stopped
+
+  locust:
+    build: .
+    command: locust -f /usr/src/app/e_commerce/locustfile.py --host=http://web:8000
+    volumes:
+      - .:/usr/src/app/
+    ports:
+      - "8089:8089"
+    depends_on:
+      - web
+    profiles:
+      - loadtest
+    networks:
+      - ecommerce_network
+
+volumes:
+  postgres_data:
+
+networks:
+  ecommerce_network:
+    driver: bridge

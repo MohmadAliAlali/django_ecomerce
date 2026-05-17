@@ -33,8 +33,17 @@ INSTALLED_APPS = [
     'app.wallets',
     'drf_spectacular',
     'drf_api_logger',
+    'django_q',
 
 ]
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+    }
+}
+
+
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'E-Commerce API',
@@ -42,9 +51,7 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
-# REST_FRAMEWORK = {
-#     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-# }
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -89,17 +96,26 @@ TEMPLATES = [
 WSGI_APPLICATION = 'e_commerce.wsgi.application'
 
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': os.getenv('POSTGRES_DB', 'ecommerce_db'),  # ← كان 'e_comerce' (إملاء خاطئ)
+#         'USER': os.getenv('POSTGRES_USER', 'ecommerce_user'),
+#         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'ecommerce_password'),
+#         'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+#         'PORT': os.getenv('POSTGRES_PORT', '5432'),
+#     }
+# }
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'e_comerce'),
-        'USER': os.getenv('POSTGRES_USER', 'postgres'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'password'),
-        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        'NAME': 'ecommerce_db',  # ← كان 'e_comerce' (إملاء خاطئ)
+        'USER': 'postgres',
+        'PASSWORD': 'password',
+        'HOST':'localhost',
+        'PORT':'5432',
     }
 }
-
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -133,13 +149,3 @@ DRF_API_LOGGER_SKIP_URL_NAME = ['admin:', 'swagger', "docs",'redoc']
 DRF_API_LOGGER_QUEUE_MAX_SIZE = 50 
 DRF_API_LOGGER_INTERVAL = 10   
 
-
-# Celery Configuration
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://127.0.0.1:6379/0')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-# CELERY_TIMEZONE = 'Asia/Syria' 
-CELERY_TIMEZONE = 'UTC'
-CELERY_TASK_TRACK_STARTED = True
