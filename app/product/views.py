@@ -1,7 +1,7 @@
 from rest_framework import generics
 from .models import Product
 from rest_framework.permissions import AllowAny
-from .serializers import ProductSerializer
+from .serializers import ProductSerializer ,ProductItemSerializer
 
 # View لعرض قائمة المنتجات المتوفرة فقط
 class ProductListView(generics.ListAPIView):
@@ -14,7 +14,5 @@ class ProductListView(generics.ListAPIView):
 # View لعرض تفاصيل منتج محدد
 class ProductDetailView(generics.RetrieveAPIView):
     permission_classes = [AllowAny]
-    # يمكنك
-    #  تركها تعرض كل المنتجات، أو تصفيتها هنا أيضاً
     queryset = Product.objects.all()
-    serializer_class = ProductSerializer
+    serializer_class = ProductItemSerializer
