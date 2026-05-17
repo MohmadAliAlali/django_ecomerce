@@ -10,8 +10,5 @@ class CartSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context.get('request')
-        # if products_id := validated_data.get('products_id'):
-        #     if not products_id.exists():
-        #         raise serializers.ValidationError("المنتج غير موجود.")
         validated_data['user'] = request.user
         return super().create(validated_data)

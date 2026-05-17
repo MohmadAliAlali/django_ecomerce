@@ -13,7 +13,7 @@ class WalletDetailView(generics.RetrieveAPIView):
 
     def get_object(self):
         # جلب محفظة المستخدم الحالي
-        wallet, created = Wallet.objects.get_or_create(user=self.request.user)
+        wallet, _ = Wallet.objects.get_or_create(user=self.request.user)
         return wallet
 
 class WalletAddFundsView(generics.UpdateAPIView):
@@ -25,7 +25,7 @@ class WalletAddFundsView(generics.UpdateAPIView):
 
     def get_object(self):
         # جلب محفظة المستخدم المراد شحنها
-        wallet, created = Wallet.objects.get_or_create(user=self.request.user)
+        wallet, _ = Wallet.objects.get_or_create(user=self.request.user)
         return wallet
 
     def update(self, request, *args, **kwargs):

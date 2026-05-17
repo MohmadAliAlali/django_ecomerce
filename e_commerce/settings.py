@@ -7,7 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 
-SECRET_KEY = 'django-insecure-ghxylj&3@j2^_x&^25-)amfpqg6h4b!+67uf3y$^&(av=x+03!'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 DEBUG = True
 
@@ -60,7 +60,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-        # ═══════════════════════════════════════════════
+    # ═══════════════════════════════════════════════
     # 🛡️ إدارة الموارد: Throttling
     # ═══════════════════════════════════════════════
     'DEFAULT_THROTTLE_CLASSES': [
@@ -118,11 +118,7 @@ CACHES = {
         }
     }
 }
-# CACHES = {
-#     'default': {
-#         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-#     }
-# }
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -147,31 +143,7 @@ DATABASES = {
         },
     }
 }
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'ecommerce_db',  # ← كان 'e_comerce' (إملاء خاطئ)
-#         'USER': 'postgres',
-#         'PASSWORD': 'password',
-#         'HOST':'localhost',
-#         'PORT':'5432',
 
-#         # ← إلغاء CONN_MAX_AGE (الـ Pool يتولى الأمر)
-#         'CONN_MAX_AGE': 0,
-        
-#         # ═══════════════════════════════════════════════
-#         # 🏊 إعدادات تجمع الاتصالات (Pool)
-#         # ═══════════════════════════════════════════════
-#         'POOL_OPTIONS': {
-#             'POOL_SIZE': 10,           # ← 10 اتصالات دائمة
-#             'MAX_OVERFLOW': 5,         # ← 5 اتصالات إضافية في الذروة
-#             'RECYCLE': 3600,           # ← إعادة تدوير الاتصال كل ساعة
-#             'PRE_PING': True,          # ← التحقق من سلامة الاتصال قبل الاستخدام
-#             'POOL_TIMEOUT': 30,        # ← الانتظار 30 ثانية لاتصال حر
-#         },
-#     }
-    
-# }
 
 
 AUTH_PASSWORD_VALIDATORS = [

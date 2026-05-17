@@ -21,7 +21,7 @@ class SignupCreateAPIView(CreateAPIView):
         user = serializer.save()
 
         # 3. توليد أو استرجاع التوكن الخاص بهذا المستخدم
-        token, created = Token.objects.get_or_create(user=user)
+        token, _ = Token.objects.get_or_create(user=user)
 
         # 4. إرجاع البيانات مع التوكن
         return Response({
@@ -45,7 +45,7 @@ class LoginView(CreateAPIView):
         user = serializer.validated_data['user']
         
         # إنشاء أو جلب التوكن
-        token, created = Token.objects.get_or_create(user=user)
+        token, _ = Token.objects.get_or_create(user=user)
         
         return Response({
             "message": "تم تسجيل الدخول بنجاح",
