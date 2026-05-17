@@ -1,5 +1,7 @@
 from locust import HttpUser, task, between
 import random
+import secrets  # أداة آمنة لتوليد النصوص العشوائية
+
 
 class UserTask(HttpUser):
     wait_time = between(0.1, 0.5)
@@ -9,7 +11,7 @@ class UserTask(HttpUser):
         """تسجيل الدخول عند البدء"""
         random_id = random.randint(10000, 99999)
         self.username = f"locust_user_{random_id}"
-        password = "StrongPass123!"
+        password = secrets.token_urlsafe(12) + "A1!"
         
         # 1. التسجيل
         self.client.post("/api/accounts/signup/", json={
