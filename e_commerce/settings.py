@@ -122,14 +122,13 @@ CACHES = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'mydb'),
-        'USER': os.environ.get('DB_USER', 'myuser'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'mypassword'),
-        'HOST': 'db',
-        'PORT': '5432',
-
-
-             'CONN_MAX_AGE': 0,
+        # الاعتماد الكامل على المتغيرات البيئية بدون وضع كلمات مرور افتراضية نصية
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST', 'db'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
+        'CONN_MAX_AGE': 0,
         
         # ═══════════════════════════════════════════════
         # 🏊 إعدادات تجمع الاتصالات (Pool)
