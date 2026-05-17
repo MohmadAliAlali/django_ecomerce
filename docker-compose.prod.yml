@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  # --- خدمة Redis ---
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    # ربط Redis بشبكة backend_network
+    networks:
+      - backend_network
+
+  # --- قاعدة البيانات ---
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+    # ربط DB بشبكة backend_network
+    networks:
+      - backend_network
+
+  # --- الخدمات الرئيسية (تطبيقات Django) ---
+  app_main:
+    build: .
+    command: gunicorn e_commerce.wsgi:application --workers 2 --threads 100 --worker-class gthread --bind 0.0.0.0:8000
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    # ربط التطبيقات بشبكة backend_network
+    networks:
+      - backend_network
+
+  app_worker_1:
+    build: .
+    command: gunicorn e_commerce.wsgi:application --workers 2 --threads 100 --worker-class gthread --bind 0.0.0.0:8000
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    networks:
+      - backend_network
+
+  app_worker_2:
+    build: .
+    command: gunicorn e_commerce.wsgi application --workers 2 --threads 100 --worker-class gthread --bind 0.0.0.0:8000
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/mediafiles
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+    networks:
+      - backend_network
+
+  # --- خادم Nginx ---
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/mediafiles:ro
+    depends_on:
+      - app_main
+      - app_worker_1
+      - app_worker_2
+    # ربط Nginx بشبكة backend_network
+    networks:
+      - backend_network
+
+# --- تعريف الشبكات ---
+networks:
+  backend_network:
+    driver: bridge
+
+# --- تعريف الأحجام ---
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:

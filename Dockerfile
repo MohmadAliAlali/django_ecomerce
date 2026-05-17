@@ -1,26 +1,27 @@
+# استخدام صورة Python خفيفة
 FROM python:3.11-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# تعيين متغيرات بيئية
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
-WORKDIR /usr/src/app
-
-RUN apt-get update && apt-get install -y \
-    postgresql-client \
-    gcc \
+# تثبيت نظام الحزم والتبعيات
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client gcc python3-dev musl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+# إنشاء مجلد العمل
+WORKDIR /app
 
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+# نسخ ملف المتطلبات وتثبيتها
+COPY requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# نسخ باقي المشروع
+COPY . /app
 
-COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+# إنشاء مجلد للملفات الثابتة
+RUN mkdir -p /app/staticfiles
 
-WORKDIR /usr/src/app/e_commerce
-
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
-CMD ["run"]
+# الأمر الافتراضي (يتم استبداله في docker-compose بـ gunicorn)
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

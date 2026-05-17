@@ -2,11 +2,13 @@ from rest_framework.generics import ListAPIView, CreateAPIView, DestroyAPIView
 from rest_framework.permissions import IsAuthenticated
 from .serializers import CartSerializer
 from .models import Cart
+from rest_framework.throttling import ScopedRateThrottle
 
 class CartCreateView(CreateAPIView):
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated]
-
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'create-order' 
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context['request'] = self.request

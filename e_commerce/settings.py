@@ -34,14 +34,12 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'drf_api_logger',
     'django_q',
+     'silk',
+    'django_psutil_dash',
 
 ]
 
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-    }
-}
+
 
 
 
@@ -62,13 +60,29 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+        # ═══════════════════════════════════════════════
+    # 🛡️ إدارة الموارد: Throttling
+    # ═══════════════════════════════════════════════
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',   # للزوار المجهولين
+        'rest_framework.throttling.UserRateThrottle',   # للمستخدمين المسجلين
+        'rest_framework.throttling.ScopedRateThrottle', # لكل endpoint على حدة
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '20/minute',      # ← 20 طلب/دقيقة للزوار
+        'user': '100/minute',     # ← 100 طلب/دقيقة للمستخدم العادي
+        'create-order': '10/minute',  # ← 10 طلبات/دقيقة لإنشاء الفاتورة (حماية الشراء)
+        'wallet-add': '3/minute',    # ← 3 طلبات/دقيقة لإضافة رصيد
+    }
 }
 
 MIDDLEWARE = [
+     'silk.middleware.SilkyMiddleware',
     'drf_api_logger.middleware.api_logger_middleware.APILoggerMiddleware', # يفضل وضعه في البداية
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'django.middleware.gzip.GZipMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -95,27 +109,69 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'e_commerce.wsgi.application'
 
-
-# DATABASES = {
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://redis:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+# CACHES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': os.getenv('POSTGRES_DB', 'ecommerce_db'),  # ← كان 'e_comerce' (إملاء خاطئ)
-#         'USER': os.getenv('POSTGRES_USER', 'ecommerce_user'),
-#         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'ecommerce_password'),
-#         'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
-#         'PORT': os.getenv('POSTGRES_PORT', '5432'),
+#         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
 #     }
 # }
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ecommerce_db',  # ← كان 'e_comerce' (إملاء خاطئ)
-        'USER': 'postgres',
-        'PASSWORD': 'password',
-        'HOST':'localhost',
-        'PORT':'5432',
+        'NAME': os.environ.get('DB_NAME', 'mydb'),
+        'USER': os.environ.get('DB_USER', 'myuser'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'mypassword'),
+        'HOST': 'db',
+        'PORT': '5432',
+
+
+             'CONN_MAX_AGE': 0,
+        
+        # ═══════════════════════════════════════════════
+        # 🏊 إعدادات تجمع الاتصالات (Pool)
+        # ═══════════════════════════════════════════════
+        'POOL_OPTIONS': {
+            'POOL_SIZE': 10,           # ← 10 اتصالات دائمة
+            'MAX_OVERFLOW': 5,         # ← 5 اتصالات إضافية في الذروة
+            'RECYCLE': 3600,           # ← إعادة تدوير الاتصال كل ساعة
+            'PRE_PING': True,          # ← التحقق من سلامة الاتصال قبل الاستخدام
+            'POOL_TIMEOUT': 30,        # ← الانتظار 30 ثانية لاتصال حر
+        },
     }
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'ecommerce_db',  # ← كان 'e_comerce' (إملاء خاطئ)
+#         'USER': 'postgres',
+#         'PASSWORD': 'password',
+#         'HOST':'localhost',
+#         'PORT':'5432',
+
+#         # ← إلغاء CONN_MAX_AGE (الـ Pool يتولى الأمر)
+#         'CONN_MAX_AGE': 0,
+        
+#         # ═══════════════════════════════════════════════
+#         # 🏊 إعدادات تجمع الاتصالات (Pool)
+#         # ═══════════════════════════════════════════════
+#         'POOL_OPTIONS': {
+#             'POOL_SIZE': 10,           # ← 10 اتصالات دائمة
+#             'MAX_OVERFLOW': 5,         # ← 5 اتصالات إضافية في الذروة
+#             'RECYCLE': 3600,           # ← إعادة تدوير الاتصال كل ساعة
+#             'PRE_PING': True,          # ← التحقق من سلامة الاتصال قبل الاستخدام
+#             'POOL_TIMEOUT': 30,        # ← الانتظار 30 ثانية لاتصال حر
+#         },
+#     }
+    
+# }
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -143,9 +199,28 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
 
 DRF_API_LOGGER_DATABASE = True
 DRF_API_LOGGER_SKIP_URL_NAME = ['admin:', 'swagger', "docs",'redoc']
 DRF_API_LOGGER_QUEUE_MAX_SIZE = 50 
 DRF_API_LOGGER_INTERVAL = 10   
 
+
+SILKY_PYTHON_PROFILER = True           # ← تفعيل Python cProfile
+SILKY_PYTHON_PROFILER_BINARY = True  # ← توليد ملفات .prof للتحليل العميق
+SILKY_ANALYZE_QUERIES = True         # ← تحليل SQL queries
+SILKY_META = True                    # ← عرض وقت Silk نفسه
+
+# حماية الإنتاج: فقط الـ Staff يمكنهم رؤية /silk/
+SILKY_AUTHENTICATION = True
+SILKY_AUTHORISATION = True
+SILKY_PERMISSIONS = lambda user: user.is_superuser
+
+# تقليل التأثير على الأداء: تسجيل 10% فقط من الطلبات في الإنتاج
+SILKY_RECORD_FRACTION = 0.1 if not DEBUG else 1.0
+
+# حد حجم Request/Response (يمنع تضخم DB)
+SILKY_MAX_REQUEST_BODY_SIZE = 1024   # 1KB
+SILKY_MAX_RESPONSE_BODY_SIZE = 1024  # 1KB
