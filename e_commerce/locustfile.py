@@ -4,7 +4,7 @@ import secrets  # أداة آمنة لتوليد النصوص العشوائية
 
 
 class UserTask(HttpUser):
-    wait_time = between(0.1, 0.5)
+    wait_time =  between(2, 5)
     cart_has_items = False
     
     def on_start(self):

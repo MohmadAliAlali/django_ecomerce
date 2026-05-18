@@ -11,7 +11,15 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 
 DEBUG = True
 
-ALLOWED_HOSTS = [ '127.0.0.1','localhost']
+ALLOWED_HOSTS = [
+     '127.0.0.1',
+     'localhost', 
+     'nginx',           # ← Add this
+     'app_main',
+     'app_worker_1',
+     'app_worker_2',
+     '*', 
+]
 
 
 
@@ -34,8 +42,8 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'drf_api_logger',
     'django_q',
-     'silk',
-    'django_psutil_dash',
+    #  'silk',
+    # 'django_psutil_dash',
 
 ]
 
@@ -63,22 +71,20 @@ REST_FRAMEWORK = {
     # ═══════════════════════════════════════════════
     # 🛡️ إدارة الموارد: Throttling
     # ═══════════════════════════════════════════════
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',   # للزوار المجهولين
-        'rest_framework.throttling.UserRateThrottle',   # للمستخدمين المسجلين
-        'rest_framework.throttling.ScopedRateThrottle', # لكل endpoint على حدة
-    ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '20/minute',      # ← 20 طلب/دقيقة للزوار
-        'user': '100/minute',     # ← 100 طلب/دقيقة للمستخدم العادي
-        'create-order': '10/minute',  # ← 10 طلبات/دقيقة لإنشاء الفاتورة (حماية الشراء)
-        'wallet-add': '3/minute',    # ← 3 طلبات/دقيقة لإضافة رصيد
-    }
+    # 'DEFAULT_THROTTLE_CLASSES': [
+    #     'rest_framework.throttling.AnonRateThrottle',   # للزوار المجهولين
+    #     'rest_framework.throttling.UserRateThrottle',   # للمستخدمين المسجلين
+    #     'rest_framework.throttling.ScopedRateThrottle', # لكل endpoint على حدة
+    # ],
+    # 'DEFAULT_THROTTLE_RATES': {
+    #     'anon': '20/minute',      # ← 20 طلب/دقيقة للزوار
+    #     'user': '1000/minute',     # ← 1000 طلب/دقيقة للمستخدم العادي
+    #     'create-order': '30/minute',  # ← 30 طلبات/دقيقة لإنشاء الفاتورة (حماية الشراء)
+    #     'wallet-add': '3/minute',    # ← 3 طلبات/دقيقة لإضافة رصيد
+    # }
 }
 
 MIDDLEWARE = [
-     'silk.middleware.SilkyMiddleware',
-    'drf_api_logger.middleware.api_logger_middleware.APILoggerMiddleware', # يفضل وضعه في البداية
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -128,17 +134,17 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD'),
         'HOST': os.environ.get('DB_HOST', 'db'),
         'PORT': os.environ.get('DB_PORT', '5432'),
-        'CONN_MAX_AGE': 0,
+        'CONN_MAX_AGE': 60,
         
         # ═══════════════════════════════════════════════
         # 🏊 إعدادات تجمع الاتصالات (Pool)
         # ═══════════════════════════════════════════════
         'POOL_OPTIONS': {
             'POOL_SIZE': 10,           # ← 10 اتصالات دائمة
-            'MAX_OVERFLOW': 5,         # ← 5 اتصالات إضافية في الذروة
+            'MAX_OVERFLOW': 20,         # ← 20 اتصالات إضافية في الذروة
             'RECYCLE': 3600,           # ← إعادة تدوير الاتصال كل ساعة
             'PRE_PING': True,          # ← التحقق من سلامة الاتصال قبل الاستخدام
-            'POOL_TIMEOUT': 30,        # ← الانتظار 30 ثانية لاتصال حر
+            'POOL_TIMEOUT': 60,        # ← الانتظار 60 ثانية لاتصال حر
         },
     }
 }
@@ -168,23 +174,29 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # ← هذا المفقود
+
+# (اختياري) إذا كان لديك مجلدات static إضافية
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
-DRF_API_LOGGER_DATABASE = True
-DRF_API_LOGGER_SKIP_URL_NAME = ['admin:', 'swagger', "docs",'redoc']
-DRF_API_LOGGER_QUEUE_MAX_SIZE = 50 
-DRF_API_LOGGER_INTERVAL = 10   
+# DRF_API_LOGGER_DATABASE = True
+# DRF_API_LOGGER_SKIP_URL_NAME = ['admin:', 'swagger', "docs",'redoc']
+# DRF_API_LOGGER_QUEUE_MAX_SIZE = 50 
+# DRF_API_LOGGER_INTERVAL = 10   
 
 
-SILKY_PYTHON_PROFILER = True           # ← تفعيل Python cProfile
-SILKY_PYTHON_PROFILER_BINARY = True  # ← توليد ملفات .prof للتحليل العميق
-SILKY_ANALYZE_QUERIES = True         # ← تحليل SQL queries
-SILKY_META = True                    # ← عرض وقت Silk نفسه
+# SILKY_PYTHON_PROFILER = True           # ← تفعيل Python cProfile
+# SILKY_PYTHON_PROFILER_BINARY = True  # ← توليد ملفات .prof للتحليل العميق
+# SILKY_ANALYZE_QUERIES = True         # ← تحليل SQL queries
+# SILKY_META = True                    # ← عرض وقت Silk نفسه
 
-# حماية الإنتاج: فقط الـ Staff يمكنهم رؤية /silk/
+# # حماية الإنتاج: فقط الـ Staff يمكنهم رؤية /silk/
 SILKY_AUTHENTICATION = True
 SILKY_AUTHORISATION = True
 SILKY_PERMISSIONS = lambda user: user.is_superuser
