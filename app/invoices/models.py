@@ -26,3 +26,21 @@ class InvoiceItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} x {self.product_name} @ ${self.price} each"
+
+class WeeklyReport(models.Model):
+    week_start = models.DateField()
+    week_end = models.DateField()
+    total_sales = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    total_orders = models.PositiveIntegerField(default=0)
+    total_items_sold = models.PositiveIntegerField(default=0)
+    avg_order_value = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    top_product = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-week_start']
+        indexes = [models.Index(fields=['week_start'])]
+
+    def __str__(self):
+        return f"Report {self.week_start} to {self.week_end}: ${self.total_sales}"
+    

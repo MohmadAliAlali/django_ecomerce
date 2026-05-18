@@ -1,7 +1,7 @@
 
 import os
 from pathlib import Path
-
+from celery.schedules import crontab
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -46,6 +46,13 @@ INSTALLED_APPS = [
     # 'django_psutil_dash',
 
 ]
+
+CELERY_BEAT_SCHEDULE = {
+    'weekly-report': {
+        'task': 'app.invoices.tasks.generate_weekly_report',
+        'schedule': crontab(hour=2, minute=0, day_of_week=1),  # كل اثنين 2 صباحاً
+    },
+}
 
 # Q_CLUSTER = {
 #     'name': 'DjangoORM',
