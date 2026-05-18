@@ -74,7 +74,7 @@ services:
 
   app_worker_2:
     build: .
-    command: gunicorn e_commerce.wsgi application --workers 2 --threads 100 --worker-class gthread --bind 0.0.0.0:8000 --timeout 30 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50
+    command: gunicorn e_commerce.wsgi:application --workers 4 --threads 4 --worker-class gthread --bind 0.0.0.0:8000 --timeout 30 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50
     deploy:
       resources:
         limits:
