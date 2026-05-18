@@ -71,7 +71,31 @@ services:
       - redis
     networks:
       - backend_network
+  celery_worker:
+    build: .
+    command: celery -A e_commerce worker --loglevel=info --concurrency=4
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    networks:
+      - backend_network
 
+  celery_beat:
+    build: .
+    command: celery -A e_commerce beat --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    networks:
+      - backend_network
   app_worker_2:
     build: .
     command: gunicorn e_commerce.wsgi application --workers 2 --threads 100 --worker-class gthread --bind 0.0.0.0:8000 --timeout 30 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50

@@ -47,7 +47,21 @@ INSTALLED_APPS = [
 
 ]
 
-
+# Q_CLUSTER = {
+#     'name': 'DjangoORM',
+#     'workers': 4,
+#     'recycle': 500,
+#     'timeout': 90,
+#     'retry': 120,
+#     'queue_limit': 50,
+#     'bulk': 10,
+#     'orm': 'default',
+#     'redis': {
+#         'host': os.getenv('REDIS_HOST', 'redis'),  # ← redis وليس localhost
+#         'port': 6379,
+#         'db': 0,
+#     }
+# }
 
 
 
@@ -185,25 +199,11 @@ STATICFILES_DIRS = [
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
 
-# DRF_API_LOGGER_DATABASE = True
-# DRF_API_LOGGER_SKIP_URL_NAME = ['admin:', 'swagger', "docs",'redoc']
-# DRF_API_LOGGER_QUEUE_MAX_SIZE = 50 
-# DRF_API_LOGGER_INTERVAL = 10   
 
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
 
-# SILKY_PYTHON_PROFILER = True           # ← تفعيل Python cProfile
-# SILKY_PYTHON_PROFILER_BINARY = True  # ← توليد ملفات .prof للتحليل العميق
-# SILKY_ANALYZE_QUERIES = True         # ← تحليل SQL queries
-# SILKY_META = True                    # ← عرض وقت Silk نفسه
+CELERY_TASK_SERIALIZER = 'json'
 
-# # حماية الإنتاج: فقط الـ Staff يمكنهم رؤية /silk/
-SILKY_AUTHENTICATION = True
-SILKY_AUTHORISATION = True
-SILKY_PERMISSIONS = lambda user: user.is_superuser
-
-# تقليل التأثير على الأداء: تسجيل 10% فقط من الطلبات في الإنتاج
-SILKY_RECORD_FRACTION = 0.1 if not DEBUG else 1.0
-
-# حد حجم Request/Response (يمنع تضخم DB)
-SILKY_MAX_REQUEST_BODY_SIZE = 1024   # 1KB
-SILKY_MAX_RESPONSE_BODY_SIZE = 1024  # 1KB
+CELERY_RESULT_SERIALIZER = 'json'
