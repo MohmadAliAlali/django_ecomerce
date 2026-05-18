@@ -2,7 +2,7 @@ from celery import shared_task
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 
-
+message = "whatch our new products"
 @shared_task
 def send_notifications_batch(user_ids):
 
@@ -10,7 +10,7 @@ def send_notifications_batch(user_ids):
 
     for user in users:
 
-        print(f"Notification sent to {user.email}")
+        print(f"{message} - sent to {user.email}")
 
 
 @shared_task

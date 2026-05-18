@@ -3,7 +3,7 @@ from django.shortcuts import redirect
 from django.urls import path, reverse
 
 from .models import Invoice, InvoiceItem, WeeklyReport
-from .tasks import generate_weekly_report
+from .tasks import generate_weekly_report, generate_report_range
 
 
 @admin.register(Invoice)
@@ -32,6 +32,7 @@ class WeeklyReportAdmin(admin.ModelAdmin):
 		urls = super().get_urls()
 		custom = [
 			path('generate-report/', self.admin_site.admin_view(self.generate_report_view), name='invoices_weeklyreport_generate_report'),
+			path('generate-full-report/', self.admin_site.admin_view(self.generate_full_report_view), name='invoices_weeklyreport_generate_full_report'),
 		]
 		return custom + urls
 
@@ -43,11 +44,18 @@ class WeeklyReportAdmin(admin.ModelAdmin):
 	def changelist_view(self, request, extra_context=None):
 		extra_context = extra_context or {}
 		extra_context['generate_report_url'] = reverse('admin:invoices_weeklyreport_generate_report')
+		extra_context['generate_full_report_url'] = reverse('admin:invoices_weeklyreport_generate_full_report')
 		return super().changelist_view(request, extra_context=extra_context)
 
 	def generate_report_now(self, request, queryset):
 		# queue a report generation (ignores queryset, it's a global action)
 		generate_weekly_report.delay()
 		self.message_user(request, 'Weekly report generation queued.', level=messages.SUCCESS)
+
+	def generate_full_report_view(self, request):
+		# queue report for full history (start=None:end=None)
+		generate_report_range.delay()
+		self.message_user(request, 'Full report generation queued.', level=messages.SUCCESS)
+		return redirect(reverse('admin:invoices_weeklyreport_changelist'))
 
 	generate_report_now.short_description = 'Generate weekly report now'

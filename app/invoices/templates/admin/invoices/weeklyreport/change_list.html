@@ -5,4 +5,7 @@
     {% if generate_report_url %}
         <a class="button" href="{{ generate_report_url }}">Generate Report Now</a>
     {% endif %}
+    {% if generate_full_report_url %}
+        <a class="button" href="{{ generate_full_report_url }}">Generate Full Report (All Time)</a>
+    {% endif %}
 {% endblock %}
