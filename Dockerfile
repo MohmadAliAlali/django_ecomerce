@@ -2,8 +2,8 @@
 FROM python:3.11-slim
 
 # تعيين متغيرات بيئية
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # إنشاء مجلد العمل أولاً لتنظيم النسخ
 WORKDIR /app
