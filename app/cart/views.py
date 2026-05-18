@@ -31,4 +31,3 @@ class CartDeleteView(DestroyAPIView):
     # إذا كان هناك عدة منتجات، سيرمي خطأ MultipleObjectsReturned
     def get_object(self):
         return Cart.objects.filter(user=self.request.user).first() 
-    print("ma7wa")

@@ -18,6 +18,7 @@ RUN pip install -r requirements.txt
 COPY . .
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 WORKDIR /usr/src/app/e_commerce

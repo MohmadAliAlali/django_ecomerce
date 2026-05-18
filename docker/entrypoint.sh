@@ -1,5 +1,4 @@
-#!/bin/sh
-
+#!/bin/bash\r   
 set -e
 
 echo "Waiting for PostgreSQL..."

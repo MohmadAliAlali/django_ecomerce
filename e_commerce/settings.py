@@ -109,9 +109,9 @@ WSGI_APPLICATION = 'e_commerce.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ecommerce_db',  # ← كان 'e_comerce' (إملاء خاطئ)
+        'NAME': 'ecommerce_bd',  # ← كان 'e_comerce' (إملاء خاطئ)
         'USER': 'postgres',
-        'PASSWORD': 'password',
+        'PASSWORD': '1234',
         'HOST':'localhost',
         'PORT':'5432',
     }
@@ -149,3 +149,10 @@ DRF_API_LOGGER_SKIP_URL_NAME = ['admin:', 'swagger', "docs",'redoc']
 DRF_API_LOGGER_QUEUE_MAX_SIZE = 50 
 DRF_API_LOGGER_INTERVAL = 10   
 
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+
+CELERY_ACCEPT_CONTENT = ['json']
+
+CELERY_TASK_SERIALIZER = 'json'
+
+CELERY_RESULT_SERIALIZER = 'json'
