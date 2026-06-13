@@ -1,0 +1,17 @@
+FROM openresty/openresty:1.27.1.2-0-alpine
+
+RUN rm -f /usr/local/openresty/nginx/conf/nginx.conf.default \
+    && mkdir -p /var/log/nginx /usr/local/openresty/lualib
+
+COPY nginx/openresty.conf /usr/local/openresty/nginx/conf/nginx.conf
+COPY nginx/lua/routing_state.lua /usr/local/openresty/lualib/routing_state.lua
+COPY nginx/lua/redis_pull.lua /usr/local/openresty/lualib/redis_pull.lua
+COPY nginx/lua/live_cache.lua /usr/local/openresty/lualib/live_cache.lua
+COPY nginx/lua/circuit_breaker.lua /usr/local/openresty/lualib/circuit_breaker.lua
+COPY nginx/lua/edge_local_inflight.lua /usr/local/openresty/lualib/edge_local_inflight.lua
+COPY nginx/lua/route_compute.lua /usr/local/openresty/lualib/route_compute.lua
+COPY nginx/lua/route_bin.lua /usr/local/openresty/lualib/route_bin.lua
+
+EXPOSE 80
+
+CMD ["/usr/local/openresty/bin/openresty", "-g", "daemon off;"]

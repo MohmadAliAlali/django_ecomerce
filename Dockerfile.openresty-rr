@@ -1,0 +1,10 @@
+FROM openresty/openresty:1.27.1.2-0-alpine
+
+RUN rm -f /usr/local/openresty/nginx/conf/nginx.conf.default \
+    && mkdir -p /var/log/nginx
+
+COPY nginx/openresty-roundrobin.conf /usr/local/openresty/nginx/conf/nginx.conf
+
+EXPOSE 80
+
+CMD ["/usr/local/openresty/bin/openresty", "-g", "daemon off;"]

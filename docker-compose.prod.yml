@@ -1,15 +1,12 @@
 version: '3.8'
 
 services:
-  # --- خدمة Redis ---
   redis:
     image: redis:alpine
     restart: unless-stopped
-    # ربط Redis بشبكة backend_network
     networks:
       - backend_network
 
-  # --- قاعدة البيانات ---
   db:
     image: postgres:15-alpine
     restart: unless-stopped
@@ -20,22 +17,12 @@ services:
       POSTGRES_DB: mydb
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
-    # ربط DB بشبكة backend_network
     networks:
       - backend_network
 
-  # --- الخدمات الرئيسية (تطبيقات Django) ---
   app_main:
     build: .
     command: gunicorn e_commerce.wsgi:application --workers 4 --threads 4 --worker-class gthread --bind 0.0.0.0:8000 --timeout 30 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'      # ← Docker: حد CPU
-          memory: 1G       # ← Docker: حد RAM
-        reservations:
-          cpus: '0.5'
-          memory: 512M
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
@@ -44,24 +31,18 @@ services:
       - .env
     environment:
       DJANGO_SETTINGS_MODULE: e_commerce.settings.docker
+      NODE_ID: app_main
+      SERVER_TIER: SMALL
+      REDIS_HOST: redis
     depends_on:
       - db
       - redis
-    # ربط التطبيقات بشبكة backend_network
     networks:
       - backend_network
 
   app_worker_1:
     build: .
     command: gunicorn e_commerce.wsgi:application --workers 4 --threads 4 --worker-class gthread --bind 0.0.0.0:8000 --timeout 30 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50
-    deploy:
-        resources:
-          limits:
-            cpus: '1.0'      # ← Docker: حد CPU
-            memory: 1G       # ← Docker: حد RAM
-          reservations:
-            cpus: '0.5'
-            memory: 512M
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
@@ -70,6 +51,9 @@ services:
       - .env
     environment:
       DJANGO_SETTINGS_MODULE: e_commerce.settings.docker
+      NODE_ID: app_worker_1
+      SERVER_TIER: MEDIUM
+      REDIS_HOST: redis
     depends_on:
       - db
       - redis
@@ -79,14 +63,6 @@ services:
   app_worker_2:
     build: .
     command: gunicorn e_commerce.wsgi:application --workers 2 --threads 100 --worker-class gthread --bind 0.0.0.0:8000 --timeout 30 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'      # ← Docker: حد CPU
-          memory: 1G       # ← Docker: حد RAM
-        reservations:
-          cpus: '0.5'
-          memory: 512M
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
@@ -95,46 +71,115 @@ services:
       - .env
     environment:
       DJANGO_SETTINGS_MODULE: e_commerce.settings.docker
+      NODE_ID: app_worker_2
+      SERVER_TIER: MONSTER
+      REDIS_HOST: redis
     depends_on:
       - db
       - redis
     networks:
       - backend_network
 
-  # --- خادم Nginx ---
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
+  decision-cache:
+    image: python:3.12-alpine
+    working_dir: /app
     volumes:
-      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
-      - static_volume:/app/staticfiles:ro
-      - media_volume:/app/mediafiles:ro
+      - ./scripts:/app/scripts:ro
+      - routing_cache:/var/cache/routing
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    command:
+      [
+        "sh",
+        "-c",
+        "pip install -q redis && python3 /app/scripts/decision_cache_service.py",
+        "--config",
+        "/app/scripts/servers.django.json",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8099",
+        "--interval",
+        "3",
+        "--cache-file",
+        "/var/cache/routing/routing_cache.json",
+        "--compact-cache-file",
+        "/var/cache/routing/routing_compact.json",
+        "--edge-choices",
+        "2",
+      ]
+    depends_on:
+      - redis
+      - app_main
+      - app_worker_1
+      - app_worker_2
+    expose:
+      - "8099"
+    networks:
+      - backend_network
+
+  openresty:
+    build:
+      context: .
+      dockerfile: Dockerfile.openresty
+    ports:
+      - "8088:80"
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      LB_LIVE_PULL_INTERVAL_SEC: "0.3"
+      LB_MAX_ACTIVE_REQUESTS: "64"
+      LB_TARGET_RESPONSE_TIME_MS: "200"
+      LB_AFFINITY_BONUS_MATCH: "0.4"
+      LB_AFFINITY_BONUS_MISMATCH: "-0.2"
+      LB_FALLBACK_SCORE_THRESHOLD: "1.5"
+      LB_CB_FAIL_THRESHOLD: "3"
+      LB_CB_OPEN_SECONDS: "10"
+      LB_CB_MAX_OPEN_SECONDS: "120"
+      LB_CB_CANARY_RATE: "0.01"
+    volumes:
+      - routing_cache:/var/cache/routing:ro
+    depends_on:
+      - redis
+      - decision-cache
+      - app_main
+      - app_worker_1
+      - app_worker_2
+    networks:
+      - backend_network
+
+  openresty-rr:
+    build:
+      context: .
+      dockerfile: Dockerfile.openresty-rr
+    ports:
+      - "8090:80"
     depends_on:
       - app_main
       - app_worker_1
       - app_worker_2
-    # ربط Nginx بشبكة backend_network
     networks:
       - backend_network
+
   locust:
     build: .
-    command: locust -f ./e_commerce/locustfile.py --host=http://nginx:80
+    command: locust -f ./e_commerce/locustfile.py --host=http://openresty:80
     ports:
       - "8089:8089"
     volumes:
       - .:/app
     depends_on:
-      - nginx
+      - openresty
     networks:
       - backend_network
-# --- تعريف الشبكات ---
+
 networks:
   backend_network:
     driver: bridge
 
-# --- تعريف الأحجام ---
 volumes:
   postgres_data:
   static_volume:
   media_volume:
+  routing_cache:

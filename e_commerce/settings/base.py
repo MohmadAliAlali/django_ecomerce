@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'app.cart',
     'app.invoices',
     'app.wallets',
+    'app.loadbalancing',
     'drf_spectacular',
     'drf_api_logger',
     'django_q',
@@ -71,6 +72,8 @@ REST_FRAMEWORK = {
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'app.loadbalancing.middleware.ServedByMiddleware',
+    'app.loadbalancing.middleware.RequestConcurrencyMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.gzip.GZipMiddleware',
@@ -127,3 +130,27 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
 PRODUCT_CACHE_TTL = int(os.getenv('PRODUCT_CACHE_TTL', '300'))
+
+LB_NODE_ID = os.getenv('NODE_ID', 'local')
+LB_SERVER_TIER = os.getenv('SERVER_TIER', 'MEDIUM')
+LB_DEFAULT_COMPUTE_UNITS = 100
+LB_MAX_COMPUTE_UNITS = 2048
+LB_IGNORE_CLIENT_COMPUTE_HEADER = True
+LB_REDIS_LIVE_STATE_TTL_SECONDS = 1
+LB_SCRIPTS_DIR = BASE_DIR / 'scripts'
+LB_SERVERS_CONFIG = LB_SCRIPTS_DIR / 'servers.django.json'
+LB_ROUTING_CACHE_FILE = os.getenv('LB_ROUTING_CACHE_FILE', '/var/cache/routing/routing_cache.json')
+LB_NODE_INFO = {
+    'available_for_requests': True,
+    'cpu_cores': float(os.getenv('LB_CPU_CORES', '4')),
+    'cpu_clock_ghz': float(os.getenv('LB_CPU_CLOCK_GHZ', '2.8')),
+    'ram_gb': float(os.getenv('LB_RAM_GB', '8')),
+    'overhead_ms': float(os.getenv('LB_OVERHEAD_MS', '12')),
+    'request_price': float(os.getenv('LB_REQUEST_PRICE', '0.025')),
+}
+LB_ROUTE_COMPUTE_UNITS = {
+    '/api/products': 100,
+    '/api/cart': 250,
+    '/api/invoices/create': 900,
+    '/api/wallets': 400,
+}

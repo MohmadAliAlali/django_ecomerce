@@ -12,42 +12,44 @@
 من جذر المشروع شغّل:
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.prod.yml up --build
 ```
 
 بعد التشغيل ستكون الخدمات كالتالي:
 
-- `web` (Django API): على المنفذ `8000`
-- `db` (PostgreSQL): على المنفذ `5432`
-- `redis`: على المنفذ `6379`
-- `celery` (عامل المهام الخلفية): يعمل في الخلفية داخل Docker Compose
+- **Custom load balancer (OpenResty + affinity/P2C):** `http://localhost:8088`
+- **Baseline round-robin (للمقارنة):** `http://localhost:8090`
+- `app_main`, `app_worker_1`, `app_worker_2` (3 replicas Django/Gunicorn)
+- `decision-cache` (جدول التوجيه المُحسوب مسبقاً)
+- `db` (PostgreSQL), `redis`
+- `locust` (اختبار التحميل): `http://localhost:8089`
 
-رابط التطبيق:
+### Load balancing
 
-- `http://localhost:8000`
+- استخدم **`http://localhost:8088`** كمدخل API الوحيد للاختبارات (custom LB).
+- **`http://localhost:8090`** يوزّع round-robin بسيط بين النسخ الثلاث للمقارنة.
+- كل استجابة من Django تتضمن `X-Served-By: <NODE_ID>` (مثلاً `app_main`).
+- OpenResty يضيف `X-Compute-Units` حسب مسار الطلب (مثلاً `/api/invoices/create` = 900).
+- `GET /internal/node-info` — حالة العقدة الحية (لـ decision-cache).
+- `GET /api/load-distribution/servers|table|decisions` — تصحيح التوجيه.
+- `POST /api/load-distribution/route` — `{ "expectedComputeUnits": 450 }`
 
 ### تشغيل Locust (اختبار التحمل)
 
-خدمة `locust` مفعّلة عبر profile باسم `loadtest`:
-
 ```bash
-docker compose --profile loadtest up --build locust
+docker compose -f docker-compose.prod.yml up --build locust
 ```
-
-واجهة Locust:
-
-- `http://localhost:8089`
 
 ## 3) إيقاف الخدمات
 
 ```bash
-docker compose down
+docker compose -f docker-compose.prod.yml down
 ```
 
 لحذف الفوليوم (قاعدة البيانات) أيضًا:
 
 ```bash
-docker compose down -v
+docker compose -f docker-compose.prod.yml down -v
 ```
 
 ## 4) التشغيل المحلي بدون Docker (اختياري)

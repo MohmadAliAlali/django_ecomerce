@@ -1,0 +1,44 @@
+{
+  "weights": {
+    "overheadWeight": 0.4,
+    "priceWeight": 1.2,
+    "underpoweredPenalty": 0.35,
+    "slaFitThreshold": 1.0,
+    "loadWeight": 25.0,
+    "concurrencyCapacityFactor": 1.0,
+    "logMinLoad": 1,
+    "logMaxLoad": 2048,
+    "logBase": 2
+  },
+  "defaultComputeUnits": 100,
+  "maxComputeUnits": 2048,
+  "routeCompute": {
+    "/api/products": 100,
+    "/api/cart": 250,
+    "/api/invoices/create": 900,
+    "/api/wallets": 400
+  },
+  "servers": [
+    {
+      "id": "app_main",
+      "baseUrl": "http://app_main:8000",
+      "infoPath": "/internal/node-info",
+      "weight": 1.0,
+      "capabilityOverride": 4500
+    },
+    {
+      "id": "app_worker_1",
+      "baseUrl": "http://app_worker_1:8000",
+      "infoPath": "/internal/node-info",
+      "weight": 1.0,
+      "capabilityOverride": 5000
+    },
+    {
+      "id": "app_worker_2",
+      "baseUrl": "http://app_worker_2:8000",
+      "infoPath": "/internal/node-info",
+      "weight": 2.0,
+      "capabilityOverride": 9500
+    }
+  ]
+}
