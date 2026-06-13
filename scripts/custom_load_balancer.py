@@ -145,7 +145,8 @@ class CustomLoadBalancer:
 
     def _fetch(self, server: ServerConfig) -> ServerState:
         url = server.base_url.rstrip("/") + "/" + server.info_path.lstrip("/")
-        req = Request(url, method="GET")
+        # Docker service names like app_main are not RFC-valid Host labels; use localhost.
+        req = Request(url, method="GET", headers={"Host": "localhost"})
         try:
             with urlopen(req, timeout=2.0) as response:
                 payload = json.loads(response.read().decode("utf-8"))

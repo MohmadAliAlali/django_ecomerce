@@ -1,3 +1,4 @@
+import os
 import time
 
 from django.utils.deprecation import MiddlewareMixin
@@ -5,6 +6,20 @@ from django.utils.deprecation import MiddlewareMixin
 from app.loadbalancing.node_info import node_id, publish_live_state
 from app.loadbalancing.route_compute import resolve_compute_units
 from app.loadbalancing.tracking import ewma_tracker, tracker
+
+
+class ArtificialDelayMiddleware(MiddlewareMixin):
+    """Optional per-node latency injection for benchmark demos (ARTIFICIAL_DELAY_MS)."""
+
+    def __init__(self, get_response):
+        super().__init__(get_response)
+        self.delay_ms = max(0, int(os.getenv("ARTIFICIAL_DELAY_MS", "0") or 0))
+
+    def process_request(self, request):
+        if self.delay_ms <= 0 or not request.path.startswith("/api/"):
+            return None
+        time.sleep(self.delay_ms / 1000.0)
+        return None
 
 
 class ServedByMiddleware(MiddlewareMixin):

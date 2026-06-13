@@ -74,6 +74,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'app.loadbalancing.middleware.ServedByMiddleware',
     'app.loadbalancing.middleware.RequestConcurrencyMiddleware',
+    'app.loadbalancing.middleware.ArtificialDelayMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.gzip.GZipMiddleware',

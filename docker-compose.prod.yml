@@ -90,25 +90,18 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: "6379"
     command:
-      [
-        "sh",
-        "-c",
-        "pip install -q redis && python3 /app/scripts/decision_cache_service.py",
-        "--config",
-        "/app/scripts/servers.django.json",
-        "--host",
-        "0.0.0.0",
-        "--port",
-        "8099",
-        "--interval",
-        "3",
-        "--cache-file",
-        "/var/cache/routing/routing_cache.json",
-        "--compact-cache-file",
-        "/var/cache/routing/routing_compact.json",
-        "--edge-choices",
-        "2",
-      ]
+      - sh
+      - -c
+      - >-
+        pip install -q redis &&
+        python3 /app/scripts/decision_cache_service.py
+        --config /app/scripts/servers.django.json
+        --host 0.0.0.0
+        --port 8099
+        --interval 3
+        --cache-file /var/cache/routing/routing_cache.json
+        --compact-cache-file /var/cache/routing/routing_compact.json
+        --edge-choices 2
     depends_on:
       - redis
       - app_main

@@ -28,6 +28,13 @@ class UserTask(HttpUser):
         
         if response.status_code == 200:
             self.token = response.json()['token']
+            headers = {"Authorization": f"Token {self.token}"}
+            self.client.put(
+                "/api/wallets/add-funds/",
+                json={"amount": "500.00"},
+                headers=headers,
+                name="Seed Wallet Funds",
+            )
         else:
             print(f"فشل تسجيل الدخول لـ {self.username}")
             self.token = None
