@@ -1,0 +1,47 @@
+{
+  "scenario": "checkout_heavy_throttled_app_main",
+  "artificial_delay_ms": 1200,
+  "locustfile": "./e_commerce/locustfile_checkout_heavy.py",
+  "runs": [
+    {
+      "label": "custom_lb",
+      "title": "Custom LB (:8088 / openresty)",
+      "users": 40,
+      "spawn_rate": 5,
+      "duration_sec": 90,
+      "total_requests": 5332,
+      "total_failures": 329,
+      "requests_per_sec": 60.46179773536363,
+      "median_ms": 81.0,
+      "p95_ms": 790.0,
+      "avg_ms": 208.6212638600867,
+      "checkout_requests": 1614,
+      "checkout_failures": 1,
+      "checkout_median_ms": 100.0,
+      "checkout_p95_ms": 610.0,
+      "product_list_median_ms": 68.0,
+      "product_list_p95_ms": 640.0,
+      "aggregated_fail_pct": 6.170292573143286
+    },
+    {
+      "label": "round_robin",
+      "title": "Round-robin (:8090 / openresty-rr)",
+      "users": 40,
+      "spawn_rate": 5,
+      "duration_sec": 90,
+      "total_requests": 1458,
+      "total_failures": 0,
+      "requests_per_sec": 14.826289413172303,
+      "median_ms": 42.0,
+      "p95_ms": 9900.0,
+      "avg_ms": 2083.1329070274487,
+      "checkout_requests": 407,
+      "checkout_failures": 0,
+      "checkout_median_ms": 320.0,
+      "checkout_p95_ms": 10000.0,
+      "product_list_median_ms": 23.0,
+      "product_list_p95_ms": 9400.0,
+      "aggregated_fail_pct": 0.0
+    }
+  ]
+}

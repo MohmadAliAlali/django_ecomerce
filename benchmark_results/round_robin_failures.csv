@@ -1,0 +1,3 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+POST,Signup User,HTTPError('400 Client Error: Bad Request for url: Signup User'),1,2026-06-13T16:00:09Z,2026-06-13T16:00:09Z
+POST,Login User,HTTPError('400 Client Error: Bad Request for url: Login User'),1,2026-06-13T16:00:17Z,2026-06-13T16:00:17Z
