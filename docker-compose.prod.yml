@@ -1,15 +1,12 @@
-version: '3.8'
-
 services:
-  # --- خدمة Redis ---
+  # --- Redis Service ---
   redis:
     image: redis:alpine
     restart: unless-stopped
-    # ربط Redis بشبكة backend_network
     networks:
       - backend_network
 
-  # --- قاعدة البيانات ---
+  # --- Database Service ---
   db:
     image: postgres:15-alpine
     restart: unless-stopped
@@ -20,66 +17,21 @@ services:
       POSTGRES_DB: mydb
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
-    # ربط DB بشبكة backend_network
     networks:
       - backend_network
 
-  # --- الخدمات الرئيسية (تطبيقات Django) ---
+  # --- Main Django Application (Scaled via Replicas) ---
   app_main:
     build: .
-    command: gunicorn e_commerce.wsgi:application --workers 4 --threads 4 --worker-class gthread --bind 0.0.0.0:8000 --timeout 30 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50
+    # Optimized Gunicorn: 4 Workers per container, 2 threads each. 
+    # This prevents GIL lockups during heavy password hashing.
+    command: gunicorn e_commerce.wsgi:application --workers 4 --threads 2 --worker-class gthread --bind 0.0.0.0:8000 --timeout 60 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50
     deploy:
+      replicas: 3  # Automatically spins up 3 load-balanced copies
       resources:
         limits:
-          cpus: '1.0'      # ← Docker: حد CPU
-          memory: 1G       # ← Docker: حد RAM
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-    volumes:
-      - .:/app
-      - static_volume:/app/staticfiles
-      - media_volume:/app/mediafiles
-    env_file:
-      - .env
-    depends_on:
-      - db
-      - redis
-    # ربط التطبيقات بشبكة backend_network
-    networks:
-      - backend_network
-
-  app_worker_1:
-    build: .
-    command: gunicorn e_commerce.wsgi:application --workers 4 --threads 4 --worker-class gthread --bind 0.0.0.0:8000 --timeout 30 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50
-    deploy:
-        resources:
-          limits:
-            cpus: '1.0'      # ← Docker: حد CPU
-            memory: 1G       # ← Docker: حد RAM
-          reservations:
-            cpus: '0.5'
-            memory: 512M
-    volumes:
-      - .:/app
-      - static_volume:/app/staticfiles
-      - media_volume:/app/mediafiles
-    env_file:
-      - .env
-    depends_on:
-      - db
-      - redis
-    networks:
-      - backend_network
-
-  app_worker_2:
-    build: .
-    command: gunicorn e_commerce.wsgi:application --workers 2 --threads 100 --worker-class gthread --bind 0.0.0.0:8000 --timeout 30 --keep-alive 2 --max-requests 1000 --max-requests-jitter 50
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'      # ← Docker: حد CPU
-          memory: 1G       # ← Docker: حد RAM
+          cpus: '2.0'      # Increased CPU limit to handle hashing bursts
+          memory: 1.5G 
         reservations:
           cpus: '0.5'
           memory: 512M
@@ -95,7 +47,7 @@ services:
     networks:
       - backend_network
 
-  # --- خادم Nginx ---
+  # --- Nginx Load Balancer ---
   nginx:
     image: nginx:alpine
     ports:
@@ -106,11 +58,10 @@ services:
       - media_volume:/app/mediafiles:ro
     depends_on:
       - app_main
-      - app_worker_1
-      - app_worker_2
-    # ربط Nginx بشبكة backend_network
     networks:
       - backend_network
+
+  # --- Locust Stress Tester ---
   locust:
     build: .
     command: locust -f ./e_commerce/locustfile.py --host=http://nginx:80
@@ -122,12 +73,13 @@ services:
       - nginx
     networks:
       - backend_network
-# --- تعريف الشبكات ---
+
+# --- Network Definitions ---
 networks:
   backend_network:
     driver: bridge
 
-# --- تعريف الأحجام ---
+# --- Volume Definitions ---
 volumes:
   postgres_data:
   static_volume:
