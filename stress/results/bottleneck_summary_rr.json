@@ -1,0 +1,80 @@
+{
+  "host": "http://localhost:8090",
+  "load_balancer": "Round-robin (openresty-rr :8090)",
+  "product_id": 16,
+  "concurrency": 25,
+  "serial_before": {
+    "label": "before_no_cache",
+    "samples": 200,
+    "mean_ms": 41.43,
+    "median_ms": 43.08,
+    "p95_ms": 54.31,
+    "min_ms": 20.74,
+    "max_ms": 79.77
+  },
+  "serial_after": {
+    "label": "after_redis_cache",
+    "samples": 200,
+    "mean_ms": 41.78,
+    "median_ms": 43.35,
+    "p95_ms": 57.81,
+    "min_ms": 21.53,
+    "max_ms": 84.71
+  },
+  "concurrent_before": {
+    "label": "concurrent_before_no_cache",
+    "samples": 500,
+    "mean_ms": 387.24,
+    "median_ms": 309.59,
+    "p95_ms": 933.97,
+    "min_ms": 76.76,
+    "max_ms": 1500.68
+  },
+  "concurrent_after": {
+    "label": "concurrent_after_redis_cache",
+    "samples": 500,
+    "mean_ms": 343.51,
+    "median_ms": 274.53,
+    "p95_ms": 800.19,
+    "min_ms": 53.66,
+    "max_ms": 1530.06
+  },
+  "service_before": {
+    "count": 500,
+    "mean_ms": 3.12,
+    "median_ms": 2.9,
+    "p95_ms": 4.13,
+    "max_ms": 50.14
+  },
+  "service_after": {
+    "count": 501,
+    "mean_ms": 1.23,
+    "median_ms": 1.08,
+    "p95_ms": 2.23,
+    "max_ms": 5.73
+  },
+  "served_serial_before": {
+    "app_main": 66,
+    "app_worker_1": 68,
+    "app_worker_2": 66
+  },
+  "served_serial_after": {
+    "app_main": 68,
+    "app_worker_1": 66,
+    "app_worker_2": 66
+  },
+  "served_conc_before": {
+    "app_worker_2": 167,
+    "app_worker_1": 165,
+    "app_main": 168
+  },
+  "served_conc_after": {
+    "app_worker_1": 167,
+    "app_main": 166,
+    "app_worker_2": 167
+  },
+  "improvement_concurrent_median_pct": 11.3,
+  "improvement_concurrent_p95_pct": 14.3,
+  "improvement_service_median_pct": 62.8,
+  "improvement_service_p95_pct": 46.0
+}

@@ -28,6 +28,12 @@ docker compose -f docker-compose.prod.yml up --build
 
 - استخدم **`http://localhost:8088`** كمدخل API الوحيد للاختبارات (custom LB).
 - **`http://localhost:8090`** يوزّع round-robin بسيط بين النسخ الثلاث للمقارنة.
+- **التوثيق الكامل:** [`docs/CUSTOM_LOAD_BALANCING.md`](docs/CUSTOM_LOAD_BALANCING.md) — abstract، آلية العمل، أمثلة، ومتى يتفوق custom LB.
+- **تقارير الضغط (100 مستخدم):**
+  - Custom LB: [`stress/REPORT_CUSTOM_LB.md`](stress/REPORT_CUSTOM_LB.md)
+  - Round-robin: [`stress/REPORT_ROUND_ROBIN.md`](stress/REPORT_ROUND_ROBIN.md)
+- **فهرس التقارير:** [`stress/index.md`](stress/index.md)
+- **Redis قبل/بعد (كلا الـ LB):** [`docs/REDIS_CACHE_BEFORE_AFTER.md`](docs/REDIS_CACHE_BEFORE_AFTER.md)
 - كل استجابة من Django تتضمن `X-Served-By: <NODE_ID>` (مثلاً `app_main`).
 - OpenResty يضيف `X-Compute-Units` حسب مسار الطلب (مثلاً `/api/invoices/create` = 900).
 - `GET /internal/node-info` — حالة العقدة الحية (لـ decision-cache).
@@ -39,6 +45,25 @@ docker compose -f docker-compose.prod.yml up --build
 ```bash
 docker compose -f docker-compose.prod.yml up --build locust
 ```
+
+### المتطلب 9 — اختبار ضغط 100+ مستخدم
+
+```bash
+python scripts/run_stress_test.py -u 100 -r 10 -t 120
+```
+
+يُنشئ `stress/REPORT.md` مع نتائج Throughput وسلامة البيانات.
+
+### المتطلب 10 — قياس الاختناقات (AOP + قبل/بعد Cache)
+
+```bash
+python scripts/benchmark_bottleneck.py --host http://localhost:8088 -n 200
+```
+
+يُنشئ `stress/BOTTLENECK_REPORT.md`. التفاصيل: [`stress/README.md`](stress/README.md).
+
+- `GET /api/health/` — فحص الجاهزية
+- `GET /api/performance/stats/` — أزمنة الطبقة الخدمية (مثل Spring AOP)
 
 ## 3) إيقاف الخدمات
 

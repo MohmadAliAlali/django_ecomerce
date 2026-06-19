@@ -1,0 +1,17 @@
+{
+  "users": 100,
+  "spawn_rate": 10,
+  "duration_sec": 120,
+  "host": "http://localhost:8088",
+  "total_requests": 3561,
+  "total_failures": 0,
+  "requests_per_sec": 28.923474192569333,
+  "median_ms": 750.0,
+  "p95_ms": 14000.0,
+  "checkout_requests": 332,
+  "checkout_409_count": 0,
+  "http_5xx_count": 0,
+  "integrity_ok": true,
+  "negative_stock": 0,
+  "negative_wallets": 0
+}

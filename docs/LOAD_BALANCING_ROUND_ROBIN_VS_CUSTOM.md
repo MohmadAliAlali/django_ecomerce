@@ -618,6 +618,22 @@ For course requirement #5, the custom stack demonstrates **measurable, explainab
 
 ---
 
+## 16. Redis cache before/after (both load balancers)
+
+Requirement **#6** (Redis cache-aside) compounds with both entry points. Controlled benchmarks (`scripts/benchmark_bottleneck.py`) compare **PostgreSQL every request** vs **Redis cache hits** on the same product read path:
+
+| View | Custom LB `:8088` | Round-robin `:8090` |
+|------|------------------:|--------------------:|
+| Service-layer median | **63.6%** faster | **62.8%** faster |
+| Concurrent HTTP median | **8.0%** faster | **11.3%** faster |
+| Concurrent HTTP p95 | **5.5%** faster | **14.3%** faster |
+
+Service-layer gains are nearly identical (same Redis + PostgreSQL). End-to-end concurrent gains differ slightly because custom LB affinity steers reads to one replica while round-robin spreads ~33% per node.
+
+Full analysis, architecture diagram, and 100-user stress context: **[REDIS_CACHE_BEFORE_AFTER.md](REDIS_CACHE_BEFORE_AFTER.md)**. Report index: **[../stress/index.md](../stress/index.md)**.
+
+---
+
 ## Appendix — file map
 
 | Area | Path |
@@ -633,4 +649,7 @@ For course requirement #5, the custom stack demonstrates **measurable, explainab
 | Checkout-heavy Locust | `e_commerce/locustfile_checkout_heavy.py` |
 | Fair A/B runner | `scripts/lb_ab_benchmark.py` |
 | Win demo runner | `scripts/lb_win_demo.py` |
+| Bottleneck benchmark | `scripts/benchmark_bottleneck.py` |
 | Benchmark results | `benchmark_results/` |
+| Redis cache analysis | [REDIS_CACHE_BEFORE_AFTER.md](REDIS_CACHE_BEFORE_AFTER.md) |
+| Report index | [../stress/index.md](../stress/index.md) |

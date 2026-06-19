@@ -75,6 +75,7 @@ MIDDLEWARE = [
     'app.loadbalancing.middleware.ServedByMiddleware',
     'app.loadbalancing.middleware.RequestConcurrencyMiddleware',
     'app.loadbalancing.middleware.ArtificialDelayMiddleware',
+    'app.common.middleware.PerformanceMonitorMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.gzip.GZipMiddleware',
@@ -131,6 +132,38 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 
 PRODUCT_CACHE_TTL = int(os.getenv('PRODUCT_CACHE_TTL', '300'))
+PRODUCT_CACHE_ENABLED = os.getenv('PRODUCT_CACHE_ENABLED', 'true').lower() in ('1', 'true', 'yes')
+PERFORMANCE_MONITOR_ENABLED = os.getenv('PERFORMANCE_MONITOR_ENABLED', 'true').lower() in ('1', 'true', 'yes')
+PERFORMANCE_MONITOR_SLOW_MS = int(os.getenv('PERFORMANCE_MONITOR_SLOW_MS', '200'))
+PERFORMANCE_BENCHMARK_ALLOW_BYPASS = os.getenv('PERFORMANCE_BENCHMARK_ALLOW_BYPASS', 'false').lower() in (
+    '1',
+    'true',
+    'yes',
+)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {name} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'performance': {
+            'handlers': ['console'],
+            'level': os.getenv('PERFORMANCE_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
+}
 
 LB_NODE_ID = os.getenv('NODE_ID', 'local')
 LB_SERVER_TIER = os.getenv('SERVER_TIER', 'MEDIUM')

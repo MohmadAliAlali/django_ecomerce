@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.db import transaction
 from rest_framework import serializers
 
+from app.common.performance_monitor import monitor_execution
 from app.cart.models import Cart
 from app.product.catalog_cache import evict_product
 from app.product.models import Product
@@ -56,6 +57,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
         self.context['cart_items'] = sorted(cart_items, key=lambda item: item.products_id_id)
         return attrs
 
+    @monitor_execution('invoices.checkout')
     @transaction.atomic
     def create(self, validated_data):
         """

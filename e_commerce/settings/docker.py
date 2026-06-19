@@ -31,3 +31,6 @@ CACHES = {
         },
     }
 }
+
+# Allow X-Bypass-Product-Cache header for bottleneck before/after benchmarks.
+PERFORMANCE_BENCHMARK_ALLOW_BYPASS = True

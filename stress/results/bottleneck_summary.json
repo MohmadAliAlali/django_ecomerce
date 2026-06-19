@@ -1,0 +1,40 @@
+{
+  "host": "http://localhost:8088",
+  "product_id": 16,
+  "before": {
+    "label": "before_no_cache",
+    "samples": 200,
+    "mean_ms": 38.6,
+    "median_ms": 38.67,
+    "p95_ms": 53.04,
+    "min_ms": 16.16,
+    "max_ms": 116.17
+  },
+  "after": {
+    "label": "after_redis_cache",
+    "samples": 200,
+    "mean_ms": 31.97,
+    "median_ms": 30.82,
+    "p95_ms": 49.87,
+    "min_ms": 14.93,
+    "max_ms": 56.69
+  },
+  "improvement_median_pct": 20.3,
+  "improvement_p95_pct": 6.0,
+  "performance_stats": {
+    "product.get_product_cached": {
+      "count": 58,
+      "mean_ms": 2.26,
+      "median_ms": 1.07,
+      "p95_ms": 3.65,
+      "max_ms": 36.08
+    },
+    "http.GET./api/products/16/": {
+      "count": 58,
+      "mean_ms": 3.72,
+      "median_ms": 2.75,
+      "p95_ms": 6.12,
+      "max_ms": 41.66
+    }
+  }
+}

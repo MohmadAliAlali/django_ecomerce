@@ -2,10 +2,12 @@ from django.db import transaction
 from django.db.models import F
 
 from app.common.exceptions import BusinessRuleError, ConcurrentUpdateError
+from app.common.performance_monitor import monitor_execution
 from app.product.catalog_cache import evict_product
 from app.product.models import Product
 
 
+@monitor_execution('product.adjust_stock')
 def adjust_stock(product_id: int, delta: int) -> Product:
     """
     Lower-contention stock adjustment using optimistic locking via version field.

@@ -1,4 +1,5 @@
 from django.http import Http404
+from django.conf import settings
 from rest_framework import generics
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -21,7 +22,11 @@ class ProductDetailView(generics.RetrieveAPIView):
 
     def retrieve(self, request, *args, **kwargs):
         product_id = kwargs.get(self.lookup_field or 'pk')
-        cached = get_product_cached(int(product_id))
+        bypass = (
+            getattr(settings, 'PERFORMANCE_BENCHMARK_ALLOW_BYPASS', False)
+            and request.headers.get('X-Bypass-Product-Cache') == '1'
+        )
+        cached = get_product_cached(int(product_id), bypass_cache=bypass)
         if cached is None:
             raise Http404('Product not found')
         return Response(cached)

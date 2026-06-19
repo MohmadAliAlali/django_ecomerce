@@ -8,6 +8,7 @@ from app.loadbalancing.views import NodeInfoView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('internal/node-info', NodeInfoView.as_view(), name='node-info'),
+    path('api/', include('app.common.urls')),
     path('api/load-distribution/', include(load_distribution_urlpatterns)),
     path('api/accounts/', include('app.accounts.urls')),
     path('api/products/', include('app.product.urls')),
